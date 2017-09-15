@@ -1,6 +1,7 @@
 package com.example.root.ocr;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -19,6 +20,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.text.TextBlock;
@@ -30,9 +32,10 @@ public class MainActivity extends AppCompatActivity {
     TextView textView;
     ImageView imageView;
     Intent intent;
-    int RESULT_LOAD_IMAGE = 1;
+    int RESULT_LOAD_IMAGE = 1,CROP_PIC_REQUEST_CODE=2;
     Bitmap bitmap;
     String detectedText;
+    Uri selectedImage;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
-            Uri selectedImage = data.getData();
+            selectedImage = data.getData();
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
 
             Cursor cursor = getContentResolver().query(selectedImage,
@@ -73,11 +76,36 @@ public class MainActivity extends AppCompatActivity {
             textView = (TextView) findViewById(R.id.textView);
             textView.setMovementMethod(new ScrollingMovementMethod());
             button1 = (Button) findViewById(R.id.button2);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        Intent cropIntent = new Intent("com.android.camera.action.CROP");
+
+                        cropIntent.setDataAndType(selectedImage, "image/*");
+                        cropIntent.putExtra("crop", "true");
+                        cropIntent.putExtra("aspectX", 0);
+                        cropIntent.putExtra("aspectY", 0);
+                        cropIntent.putExtra("outputX", 200);
+                        cropIntent.putExtra("outputY", 500);
+                        cropIntent.putExtra("return-data", true);
+                        startActivityForResult(cropIntent, CROP_PIC_REQUEST_CODE);
+                    }
+                    // respond to users whose devices do not support the crop action
+                    catch (ActivityNotFoundException anfe) {
+                        // display an error message
+                        String errorMessage = "Whoops - your device doesn't support the crop action!";
+                        Toast toast = Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                }
+            });
+
             button1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
-                    if(!textRecognizer.isOperational()){
+                    if (!textRecognizer.isOperational()) {
                         new AlertDialog.Builder(getApplicationContext())
                                 .setMessage("Text recognizer could not be set up on your device :(").show();
                         return;
@@ -91,14 +119,57 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     textView.setText(detectedText);
-                    detectedText=null;
-                    String a =  textView.getText().toString();
-                    String desiredString = a.substring(4,a.length());
+                    detectedText = null;
+                    String a = textView.getText().toString();
+                    String desiredString = a.substring(4, a.length());
                     textView.setText(desiredString);
+                    textRecognizer.release();
                 }
             });
+
             super.onActivityResult(requestCode, resultCode, data);
 
+        }if (requestCode == CROP_PIC_REQUEST_CODE && resultCode == RESULT_OK && data!=null) {
+            try{
+                    Bundle extras = data.getExtras();
+                    if (extras != null) {
+                        bitmap = extras.getParcelable("data");
+                        imageView.setImageBitmap(bitmap);
+                        button1.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
+                                if (!textRecognizer.isOperational()) {
+                                    new AlertDialog.Builder(getApplicationContext())
+                                            .setMessage("Text recognizer could not be set up on your device :(").show();
+                                    return;
+                                }
+                                Frame frame = new Frame.Builder().setBitmap(bitmap).build();
+                                SparseArray<TextBlock> text = textRecognizer.detect(frame);
+                                for (int i = 0; i < text.size(); i++) {
+                                    TextBlock textBlock = text.valueAt(i);
+                                    if (textBlock != null && textBlock.getValue() != null) {
+                                        detectedText += textBlock.getValue();
+                                    }
+                                }
+                                if(detectedText!=null)
+                                { textView.setText(detectedText);
+                                detectedText = null;
+                                String a = textView.getText().toString();
+                                String desiredString = a.substring(4, a.length());
+                                textView.setText(desiredString);
+                                textRecognizer.release();}
+                            }
+                        });
+
+                    }
+            }catch (Exception e){
+                Toast.makeText(getApplicationContext(), (CharSequence) e,Toast.LENGTH_LONG).show();
+
+            }
         }
+
     }
+
+
 }
