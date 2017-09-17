@@ -24,8 +24,6 @@ import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
-import java.io.File;
-
 
 public class MainActivity extends AppCompatActivity {
     Button button, button1,button2;
@@ -35,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap bitmap;
     String detectedText;
     Uri selectedImage;
+    int height,width;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        imageView = (ImageView) findViewById(R.id.imageView);
+        button1 = (Button) findViewById(R.id.button2);
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
             selectedImage = data.getData();
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
@@ -80,10 +81,8 @@ public class MainActivity extends AppCompatActivity {
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             String picturePath = cursor.getString(columnIndex);
             cursor.close();
-            imageView = (ImageView) findViewById(R.id.imageView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
             bitmap = BitmapFactory.decodeFile(picturePath);
-            button1 = (Button) findViewById(R.id.button2);
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -108,28 +107,21 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-
-            button1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    check();
-                }
-            });
-
             super.onActivityResult(requestCode, resultCode, data);
 
-        }if (requestCode == CROP_PIC_REQUEST_CODE && resultCode == RESULT_OK && data!=null) {
+        }
+
+        if (requestCode == CROP_PIC_REQUEST_CODE && resultCode == RESULT_OK && data!=null) {
             try{
                     Bundle extras = data.getExtras();
                     if (extras != null) {
                         bitmap = extras.getParcelable("data");
+                    /*    height=bitmap.getHeight();
+                        width=bitmap.getWidth();
+                        imageView.setMaxHeight(height);
+                        imageView.setMaxWidth(width);*/
                         imageView.setImageBitmap(bitmap);
-                        button1.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                check();
-                            }
-                        });
+
 
                     }
             }catch (Exception e){
@@ -138,29 +130,29 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if(requestCode == CAMERA_REQUEST && resultCode == RESULT_OK && data.getExtras().get("data")!=null)
-            imageView = (ImageView) findViewById(R.id.imageView);
-            button1 = (Button) findViewById(R.id.button2);
-
-        {        try
-            {
+        {     try
+               {
                 bitmap = (Bitmap) data.getExtras().get("data");
+               /* height=bitmap.getHeight();
+                width=bitmap.getWidth();
+                imageView.setMaxHeight(height);
+                imageView.setMaxWidth(width);*/
                 imageView.setImageBitmap(bitmap);
-                    button1.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            check();
-                        }
-                    });
-
-            }catch (Exception e){
-                Toast.makeText(getApplicationContext(), (CharSequence) e,Toast.LENGTH_LONG).show();
+                }catch (Exception e){
+                       Toast.makeText(getApplicationContext(), (CharSequence) e,Toast.LENGTH_LONG).show();
 
             }
         }
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkit();
+            }
+        });
     }
 
-    public void check(){
-    detectedText=null;
+    public void checkit(){
+          detectedText=null;
     TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
     if (!textRecognizer.isOperational()) {
         new AlertDialog.Builder(getApplicationContext())
@@ -175,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
             detectedText += textBlock.getValue();
         }
     }
+        Toast.makeText(getApplicationContext(), "done",Toast.LENGTH_LONG).show();
+
     if(detectedText!=null) {
         intent1 = new Intent(getApplicationContext(), Result.class);
         intent1.putExtra("key", detectedText);
