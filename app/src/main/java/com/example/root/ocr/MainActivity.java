@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
     Bitmap bitmap;
     String detectedText;
     Uri selectedImage;
-    int height,width;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -116,10 +115,6 @@ public class MainActivity extends AppCompatActivity {
                     Bundle extras = data.getExtras();
                     if (extras != null) {
                         bitmap = extras.getParcelable("data");
-                    /*    height=bitmap.getHeight();
-                        width=bitmap.getWidth();
-                        imageView.setMaxHeight(height);
-                        imageView.setMaxWidth(width);*/
                         imageView.setImageBitmap(bitmap);
 
 
@@ -133,10 +128,6 @@ public class MainActivity extends AppCompatActivity {
         {     try
                {
                 bitmap = (Bitmap) data.getExtras().get("data");
-               /* height=bitmap.getHeight();
-                width=bitmap.getWidth();
-                imageView.setMaxHeight(height);
-                imageView.setMaxWidth(width);*/
                 imageView.setImageBitmap(bitmap);
                 }catch (Exception e){
                        Toast.makeText(getApplicationContext(), (CharSequence) e,Toast.LENGTH_LONG).show();
